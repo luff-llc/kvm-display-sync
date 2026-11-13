@@ -1,231 +1,64 @@
-# kvm-display-sync
+# KVM Display Sync by LUFF
 
-**Fixes the macOS "phantom display" problem with KVM monitors.** When your monitor's
-built-in KVM switches to another computer, macOS keeps treating the monitor as a
-connected screen. Windows open on a display you can't see, the menu bar and mouse
-cursor vanish onto it, and everything shuffles around when you switch back.
+An independently maintained native macOS app by LUFF, based on [AtakanMavzer/kvm-display-sync](https://github.com/AtakanMavzer/kvm-display-sync). The original project provides the USB detection and display recovery engine. This companion adds a SwiftUI setup wizard, menu-bar access, service status, pause/resume, logs, and uninstall.
 
-`kvm-display-sync` is a tiny background daemon (Swift, zero dependencies, ~35 MB
-RAM, 0% idle CPU) that detects the KVM switch through the monitor's USB hub and
-fixes the display layout automatically, in both directions.
+## Requirements
 
-No BetterDisplay Pro, no DDC tricks, no unplugging cables.
+- Apple Silicon Mac, macOS 14 or later. This build was compiled and exercised on macOS 27.0.1; earlier supported versions still need hardware validation.
+- A built-in display, open and available for mirroring.
+- A monitor/KVM whose USB hub disappears when switched away and returns when switched back.
 
----
+## Install and set up
 
-## Symptoms this solves
+1. Copy `KVM Display Sync.app` to Applications and open it.
+2. With the KVM showing the Mac, choose the monitor and capture the USB devices.
+3. Switch to the other computer and compare USB devices using the Mac's built-in keyboard and screen.
+4. Select the monitor's hub, switch back to the Mac, and enable automatic sync.
 
-You have a MacBook and a desktop PC (or a second Mac, or a console) sharing one
-monitor with a built-in KVM switch over USB-C / Thunderbolt, and:
+The service starts at login. The app itself does not need to stay open. macOS may display a background-item notice; leave the service enabled under System Settings > General > Login Items & Extensions.
 
-- After switching the monitor to the PC, **new windows open on the invisible external display**.
-- The **menu bar, Dock, or mouse cursor disappears** because they live on the monitor you're not looking at.
-- The MacBook **doesn't notice the monitor "left"**. System Settings still shows it as connected.
-- When you switch back, **windows are rearranged** or the main display has changed.
-- "Disconnecting" the display with a third-party tool leaves the monitor showing
-  **"USB-C No Signal"** when you switch back, and it never recovers.
-
-This happens because many USB-C monitors keep the DisplayPort link to the Mac
-alive while showing a different input. macOS has no "input switched" event, so it
-never learns the screen went dark.
+Pause unloads the service and restores the display. Resume starts it again. Pause lasts until resume or the next login. Uninstall Service stops automatic sync and removes its login agent and copied helper; the app remains available for setup again.
 
 ## How it works
 
-macOS may not know the monitor switched inputs, but it does see the monitor's
-USB hub disappear the instant the KVM routes USB to the other machine. IOKit
-reports that immediately. That is the signal.
+When the KVM routes USB away, the engine mirrors the monitor onto the built-in screen. It preserves the video signal while removing invisible desktop space. When USB returns, it restores the display arrangement. This app exposes mirror mode only. It does not require BetterDisplay.
 
-```
-KVM switches to Mac                 KVM switches to PC
-        |                                   |
-        v                                   v
-monitor's USB device appears     monitor's USB device disappears
-        |                                   |
-        v                                   v
-restore the extended layout      mirror external onto built-in
-(monitor back as main, windows   (one logical screen: nothing
- where they were)                 can get lost on the phantom)
-```
+Limitations: closing the MacBook lid removes the mirror target; monitors with identical vendor/model IDs and missing or duplicated EDID serial numbers cannot be distinguished reliably; ambiguous matches are left untouched; USB hubs shared by several devices must be chosen carefully. Sleep/wake, lid changes, and other KVM models require further hardware testing before broad compatibility claims.
 
-- **Detection**: `IOServiceAddMatchingNotification` on one USB device that lives
-  inside the monitor (by vendor/product ID). Never a keyboard or mouse, so
-  unplugging a peripheral doesn't trigger it.
-- **Debounce**: two seconds on detach (USB hubs flap while re-enumerating), a
-  fraction of a second on attach so the switch-back feels instant.
-- **Actuation**: by default, mirror the external display onto the built-in one
-  while the KVM is away, and restore the previous arrangement (positions and
-  main display) when it comes back. Mirroring keeps the video link alive, which
-  matters: see [Why mirror, not disable](#why-mirror-not-disable).
-- **Sleep-proof**: the daemon reads the real display state from the system
-  rather than remembering what it last did, pauses during sleep, re-checks
-  right after wake and on every macOS display-layout change, and reconciles
-  every 30 seconds as a safety net. A KVM that switches while the Mac is
-  asleep is caught the moment the display comes back.
-- **Recovery**: on stop or crash the daemon restores the display, so it never
-  leaves you stranded. `launchd` restarts it automatically.
+## Local storage
 
-## Quick start
+- `~/.local/bin/kvm-display-sync`: signed helper installed by setup
+- `~/Library/LaunchAgents/io.github.kvm-display-sync.plist`: startup configuration
+- `~/Library/Logs/kvm-display-sync.log`: diagnostic log
+- `~/Library/Application Support/kvm-display-sync/`: display restoration state
 
-One line. It builds from source (needs the Xcode Command Line Tools) and runs a
-short wizard that finds your display and USB device by watching you switch the
-KVM once, then installs a launch agent:
+No telemetry, accounts, network service, or analytics are added by the wrapper. The runtime operates locally. Notarization sends the app artifact to Apple, not these local configuration files.
+
+## Build
+
+Xcode with Swift 6.2 or later is needed; this source was built with Swift 6.4.2. No third-party dependencies are fetched during the build.
+
+The package has three targets: `KVMCore` (hardware, display recovery, configuration), `kvm-display-sync` (CLI/login service), and `KVMSyncApp` (native interface). Both executables use the same core; hardware discovery does not parse CLI output. The existing event-driven engine remains in Swift 5 compatibility mode while the new interface uses Swift 6 with main-actor isolation.
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/AtakanMavzer/kvm-display-sync/main/install.sh | sh
+zsh build.sh
 ```
 
-The wizard takes about a minute. Run it from a terminal on your Mac's built-in
-screen and use the built-in keyboard, since your USB keyboard follows the KVM.
-
-```
-Step 1/3  Which display does the KVM control?
-  Found one external display, using it:
-    XG27UCDMG  vendor 1715  model 10230  3840x2160  (main)
-
-Step 2/3  Which USB device follows the KVM?
-  Make sure the monitor is currently showing THIS Mac.
-  Press Enter when it is:
-  Now switch the monitor to the OTHER computer using its KVM / input button.
-  Press Enter (on the built-in keyboard) once it has switched:
-  Devices that disappeared:
-    0x0B05:0x1BFE  ROG Gaming Display Aura Device
-    0x0B05:0x1C03  USB2.1 Hub
-    ...
-  Using: ROG Gaming Display Aura Device
-  Switch the monitor back to this Mac.
-  Press Enter once it has switched back:
-  Confirmed: ROG Gaming Display Aura Device is back.
-
-Step 3/3  Install
-  ...
-Done. The daemon is running and will start at login.
-```
-
-Afterwards:
+The default build is ad-hoc signed for local use. To sign a release with your own Developer ID:
 
 ```sh
-~/.local/bin/kvm-display-sync status      # what it sees and whether the display is in sync
-~/.local/bin/kvm-display-sync uninstall   # unload and remove everything
+KVM_SIGN_IDENTITY='Developer ID Application: Your Name (TEAMID)' \
+KVM_APP_PATH='/private/tmp/KVM Display Sync.app' zsh build.sh
 ```
 
-After the first login, macOS may show a "background item added" notice. Leave
-it allowed under System Settings > General > Login Items & Extensions.
+For public distribution, notarize the resulting archive and staple Apple's ticket to the app before producing the final ZIP. Developer credentials and signing keys are not included in this source.
 
-### Manual install
+Run the focused source checks using `zsh check.sh`.
 
-If you'd rather not run a script, or want to pass options yourself:
+## Attribution and source
 
-```sh
-git clone https://github.com/AtakanMavzer/kvm-display-sync.git
-cd kvm-display-sync
-swift build -c release
-.build/release/kvm-display-sync setup              # same wizard
-```
+Original engine: AtakanMavzer/kvm-display-sync commit `ea8f58053d937415cb8e761b55dfef08b024702d`, MIT licensed. The original Git history is retained. The LUFF changes extract a shared core, add EDID serial targeting and input validation, repair built-in-screen position checks during recovery, remove shared mutable output collection from shell execution, and create the Logs directory at installation. See `Licenses/AtakanMavzer-MIT.txt`.
 
-or skip the wizard entirely:
+The original command-line documentation is preserved in `docs/CLI.md`. Public distribution is maintained independently by LUFF; it is not endorsed by the original author.
 
-```sh
-.build/release/kvm-display-sync usb        # with the KVM on the Mac, then again after switching away
-.build/release/kvm-display-sync displays   # EDID vendor/model of your monitor
-.build/release/kvm-display-sync install \
-    --usb-vendor 0x0B05 --usb-product 0x1BFE \
-    --display-vendor 1715 --display-model 10230
-```
-
-`install` copies the binary to `~/.local/bin`, writes
-`~/Library/LaunchAgents/io.github.kvm-display-sync.plist`, and loads it. It
-starts at login and survives reboots. Logs go to
-`~/Library/Logs/kvm-display-sync.log`.
-
-## Commands
-
-| command       | what it does |
-|---------------|--------------|
-| `setup`       | Interactive first run: detects display and USB device, then installs |
-| `watch`       | Run in the foreground (this is what the launch agent runs) |
-| `status`      | Show USB presence, display state, and whether they agree |
-| `displays`    | List displays with EDID vendor/model, main/active flags, and bounds |
-| `usb`         | List USB devices in the IORegistry with vendor:product IDs |
-| `test off`    | Run the actuator's disconnect step once |
-| `test on`     | Run the actuator's connect step once |
-| `install`     | Install and load the launch agent with the given options |
-| `uninstall`   | Unload and remove the launch agent and binary |
-
-## Options
-
-```
---usb-vendor <id>       USB vendor ID to watch (default 0x0B05, ASUS)
---usb-product <id>      USB product ID to watch (default 0x1BFE, ROG Gaming Display Aura Device)
---display-vendor <n>    EDID vendor of the display to manage (default 1715)
---display-model <n>     EDID model of the display to manage (default 10230)
---any-external          Manage the first non-builtin display instead of matching vendor/model
---display-name <name>   Display name for the betterdisplay actuator (default XG27UCDMG)
---actuator <kind>       mirror | disable | command | betterdisplay (default mirror)
---on-connect <cmd>      Shell command for the command actuator (KVM back on Mac)
---on-disconnect <cmd>   Shell command for the command actuator (KVM away)
---debounce <seconds>    Wait after the hub disappears before disconnecting (default 2.0)
---connect-debounce <s>  Wait after the hub appears before reconnecting (default 0.3)
---reconcile <seconds>   Re-check USB vs display state this often; 0 disables (default 30)
---no-initial-sync       Don't apply the current state at startup
---verbose, -v           Debug logging
-```
-
-Options given to `install` are baked into the launch agent. Re-run `install` to
-change them.
-
-## Actuators
-
-| actuator        | mechanism                                   | when to use |
-|-----------------|---------------------------------------------|-------------|
-| `mirror`        | public `CGConfigureDisplayMirrorOfDisplay`  | default; any Mac with a built-in display |
-| `disable`       | private `CGSConfigureDisplayEnabled`        | removes the display entirely; only if your monitor routes USB regardless of video |
-| `command`       | your own shell commands                     | Mac mini / Mac Studio, or any tool you prefer |
-| `betterdisplay` | BetterDisplay's CLI `--connected=on/off`     | if you own BetterDisplay Pro |
-
-`mirror` and `disable` both record the arrangement before acting and restore it
-afterwards, so the monitor comes back as main (or not) exactly as it was.
-
-### Why mirror, not disable
-
-Truly disabling the display is the cleaner result, and it works on current
-macOS. But it also drops the DisplayPort output, and many KVM monitors will not
-route their USB hub to an input that has no video. Switch back and the monitor
-shows "USB-C No Signal", the Mac never sees the hub, and nothing wakes the
-display up again. Mirroring keeps a signal on the wire, so the switch-back is
-always detected. The cost is a brief flash of the mirrored laptop screen when
-you switch back, gone in a fraction of a second.
-
-## Compatibility
-
-Tested on a MacBook Pro (Apple Silicon, macOS 26) with an ASUS ROG Swift
-XG27UCDMG over USB-C, with a Windows desktop on DisplayPort.
-
-It should work with any monitor whose KVM exposes a USB device of its own
-(a hub, an OSD control device, an RGB/lighting controller) that appears and
-disappears with the switch. That covers most KVM monitors from ASUS, Dell,
-LG, Samsung, Gigabyte, and BenQ. Run `usb` before and after a switch to
-confirm and to get the IDs.
-
-Known limits:
-
-- **No built-in display** (Mac mini, Mac Studio): `mirror` has nothing to
-  mirror onto. Use `disable` if your monitor routes USB independently of video,
-  or `command` with a tool of your choice.
-- **Monitors that drop the DisplayPort link on switch**: macOS removes the
-  display itself and there is nothing to fix. The daemon notices and stays
-  quiet.
-- **Sleep/wake and monitor power cycles** also make the hub vanish and return.
-  The debounce absorbs the flap; a genuine state change still gets applied.
-
-## Troubleshooting
-
-- `status` says the USB device is absent while the KVM is on the Mac: your
-  monitor's KVM setting may route USB to the other upstream port for this
-  input. Check the monitor's OSD KVM assignment.
-- Display didn't come back after `test off` with the `disable` actuator: turn
-  the monitor off and on, or run `test on`. Then use `mirror`.
-- Watch the daemon live: `tail -f ~/Library/Logs/kvm-display-sync.log`.
-
-## License
-
-MIT. See [LICENSE](LICENSE).
+The LUFF companion app is MIT licensed; see `LICENSE`. The icon uses Apple's standard display symbol, also used by the dashboard.

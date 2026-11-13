@@ -1,0 +1,11 @@
+KVM Display Sync by LUFF
+
+This independently maintained project is derived from:
+  kvm-display-sync by AtakanMavzer
+  https://github.com/AtakanMavzer/kvm-display-sync
+  Original upstream revision: ea8f58053d937415cb8e761b55dfef08b024702d
+
+The original Git commits and authorship are retained in the repository history.
+Original source is licensed under the MIT License reproduced in
+Licenses/AtakanMavzer-MIT.txt. LUFF's additions are licensed under the MIT License
+in LICENSE. The original author is not responsible for maintaining this edition.

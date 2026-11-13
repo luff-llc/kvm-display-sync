@@ -64,13 +64,20 @@ enum Displays {
 
     /// Finds the managed external display. With vendor/model given, matches exactly;
     /// otherwise falls back to the first non-builtin display.
-    static func external(vendor: UInt32?, model: UInt32?) -> DisplayInfo? {
-        let all = online()
-        if let vendor, let model {
-            return all.first(where: { $0.vendor == vendor && $0.model == model })
-        }
-        return all.first(where: { !$0.isBuiltin })
+    static func external(vendor: UInt32?, model: UInt32?, serial: UInt32? = nil) -> DisplayInfo? {
+        select(online(), vendor: vendor, model: model, serial: serial)
     }
+
+    static func select(_ all: [DisplayInfo], vendor: UInt32?, model: UInt32?, serial: UInt32?) -> DisplayInfo? {
+        let external = all.filter { !$0.isBuiltin }
+        if let vendor, let model {
+            let matches = external.filter { $0.vendor == vendor && $0.model == model && (serial == nil || $0.serial == serial) }
+            // An ambiguous match must not change an arbitrary monitor.
+            return matches.count == 1 ? matches.first : nil
+        }
+        return external.first
+    }
+
 }
 
 extension CGError {
