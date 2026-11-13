@@ -44,7 +44,7 @@ The package has three targets: `KVMCore` (hardware, display recovery, configurat
 zsh build.sh
 ```
 
-The default build is ad-hoc signed for local use. To sign a release with your own Developer ID:
+The default build writes `.build/dist/KVM Display Sync.app`, ad-hoc signed for local use. To sign a release with your own Developer ID:
 
 ```sh
 KVM_SIGN_IDENTITY='Developer ID Application: Your Name (TEAMID)' \

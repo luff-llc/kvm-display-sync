@@ -1,8 +1,8 @@
 #!/bin/zsh
 set -euo pipefail
 cd "${0:A:h}"
-BUILD_ROOT="${KVM_BUILD_ROOT:-../../work/package-build}"
-APP_PATH="${KVM_APP_PATH:-../KVM Display Sync.app}"
+BUILD_ROOT="${KVM_BUILD_ROOT:-.build/artifacts}"
+APP_PATH="${KVM_APP_PATH:-.build/dist/KVM Display Sync.app}"
 mkdir -p "$BUILD_ROOT" "$APP_PATH/Contents/MacOS" "$APP_PATH/Contents/Helpers" "$APP_PATH/Contents/Resources"
 swift build -c release --scratch-path "$BUILD_ROOT/package"
 cp "$BUILD_ROOT/package/release/kvm-display-sync" "$APP_PATH/Contents/Helpers/"
