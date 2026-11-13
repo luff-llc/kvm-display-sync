@@ -48,10 +48,13 @@ The default build writes `.build/dist/KVM Display Sync.app`, ad-hoc signed for l
 
 ```sh
 KVM_SIGN_IDENTITY='Developer ID Application: Your Name (TEAMID)' \
+KVM_EXPECTED_PUBLISHER='Your Name' \
 KVM_APP_PATH='/private/tmp/KVM Display Sync.app' zsh build.sh
 ```
 
 For public distribution, notarize the resulting archive and staple Apple's ticket to the app before producing the final ZIP. Developer credentials and signing keys are not included in this source.
+
+The release build checks that the Developer ID publisher matches `KVM_EXPECTED_PUBLISHER` (defaults to `LUFF LLC`). A certificate with the right team ID but an outdated personal publisher name is rejected by this check.
 
 Run the focused source checks using `zsh check.sh`.
 

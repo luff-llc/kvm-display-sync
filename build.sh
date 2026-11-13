@@ -16,6 +16,12 @@ xattr -cr "$APP_PATH"
 if [[ -n "${KVM_SIGN_IDENTITY:-}" ]]; then
     codesign --force --options runtime --timestamp --sign "$KVM_SIGN_IDENTITY" "$APP_PATH/Contents/Helpers/kvm-display-sync"
     codesign --force --options runtime --timestamp --sign "$KVM_SIGN_IDENTITY" "$APP_PATH"
+    EXPECTED_PUBLISHER="${KVM_EXPECTED_PUBLISHER:-LUFF LLC}"
+    SIGNATURE_INFO="$(codesign -dvv "$APP_PATH" 2>&1)"
+    if [[ "$SIGNATURE_INFO" != *"Authority=Developer ID Application: $EXPECTED_PUBLISHER ("* ]]; then
+        print -u2 "Release signing identity does not match expected publisher: $EXPECTED_PUBLISHER"
+        exit 1
+    fi
 else
     codesign --force --sign - "$APP_PATH"
 fi
