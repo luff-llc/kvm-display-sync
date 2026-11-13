@@ -19,7 +19,7 @@ This download targets Apple Silicon and macOS 14 or later. Hardware validation i
 
 The built-in display must be available. The monitor's USB hub must follow the KVM switch. Monitors with missing or duplicated serial identifiers cannot always be distinguished; ambiguous matches are left untouched.
 
-The public download should be attached only after notarization and switch-back verification are complete.
+The app and helper are Developer ID signed. Apple notarization was accepted and the ticket stapled. The final ZIP was extracted and passed code-signature, stapled-ticket, and Gatekeeper verification. The KVM switch away and return were observed on the test Mac: the hub disappeared and returned, mirror mode was applied, and the original main display and built-in-screen position were restored. Pause and resume were also exercised. The refactored engine passed all 11 regression tests; its updated service was installed and confirmed in sync. The final app interface still needs a visual check after unlocking the test Mac.
 
 ## Attribution
 
