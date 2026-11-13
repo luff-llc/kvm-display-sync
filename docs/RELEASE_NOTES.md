@@ -21,6 +21,8 @@ The built-in display must be available. The monitor's USB hub must follow the KV
 
 The app and helper are Developer ID signed. Apple notarization was accepted and the ticket stapled. The final ZIP was extracted and passed code-signature, stapled-ticket, and Gatekeeper verification. The KVM switch away and return were observed on the test Mac: the hub disappeared and returned, mirror mode was applied, and the original main display and built-in-screen position were restored. Pause and resume were also exercised. The refactored engine passed all 11 regression tests; its updated service was installed and confirmed in sync. The final native app interface was visually checked after unlocking the test Mac and showed the restored display and running service.
 
+Release publisher: `Developer ID Application: LUFF LLC (J53CA7SFMK)`. The app and helper use the company's Developer ID certificate, separate from its Mac App Store/TestFlight distribution certificate. Apple accepted this publisher-corrected build under submission `8fac4792-8112-4721-88e1-6ebbf0a0431b` on November 13, 2026.
+
 ## Attribution
 
 Original engine: [AtakanMavzer/kvm-display-sync](https://github.com/AtakanMavzer/kvm-display-sync). Native app and maintenance: LUFF. Both are MIT licensed.
