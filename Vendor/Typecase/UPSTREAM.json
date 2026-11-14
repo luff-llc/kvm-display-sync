@@ -1,0 +1,68 @@
+{
+  "repository": "https://github.com/luff-llc/typecase",
+  "revision": "36ef6a1b198331e77e6308d117aef4b2778b5d87",
+  "files": [
+    {
+      "source": "Sources/Typecase/ContentPalette.swift",
+      "sha256": "e577696e13ebae0d1131b30a4662941c409bd8aeab064d49df1b9fdb0e9259bd",
+      "adaptations": []
+    },
+    {
+      "source": "Sources/Typecase/ContentRoom.swift",
+      "sha256": "22e0e74de6a25a31edb9879f1433db60401bc3555d5ee44f9da3cebe3c25d9f9",
+      "adaptations": [
+        "Omitted standalone preview; host app verifies the composed screen."
+      ]
+    },
+    {
+      "source": "Sources/Typecase/RoomBackdrop.swift",
+      "sha256": "3ee7f586cf21757c82f2d39cbbf6adec16f9a4ddeb0cc7b0deace925f55746f7",
+      "adaptations": [
+        "Omitted standalone preview; host app verifies the composed screen.",
+        "Added a macOS 14 linear-gradient fallback; mesh remains on macOS 15+."
+      ]
+    },
+    {
+      "source": "Sources/Typecase/Motion.swift",
+      "sha256": "d0917063758712010bff340e5efba838c656fb74d3efa51f2184f072054a3e3e",
+      "adaptations": []
+    },
+    {
+      "source": "Sources/Typecase/Ink.swift",
+      "sha256": "4b659ec75342efb2ed60fdbe64a75b1212aacbdb21ba70dd3fbf2a02f73f0c78",
+      "adaptations": []
+    },
+    {
+      "source": "Sources/Typecase/Glass.swift",
+      "sha256": "09589a8cb3e662bf2a3588c111323d5d761b644e523fba93bc44b09852032908",
+      "adaptations": []
+    },
+    {
+      "source": "Sources/Typecase/CapsuleButtonStyle.swift",
+      "sha256": "1e76f079f542051932b24e69fbfd15900adc36f5a05b34a19302c8870f90d054",
+      "adaptations": []
+    },
+    {
+      "source": "Sources/Typecase/TypeScale.swift",
+      "sha256": "a6fe69dda3a3bcb7702f58a05858cf88446d26428f76e899446ee6d58c7eee9f",
+      "adaptations": []
+    },
+    {
+      "source": "Sources/Typecase/Eyebrow.swift",
+      "sha256": "d38b947fb9975fcc705170c2819b1b579ab5516cdc58ee7f55bc5b5a7a4b4896",
+      "adaptations": []
+    },
+    {
+      "source": "Sources/Typecase/Theme.swift",
+      "sha256": "45aaa84a5a19f0017b74a2599f8d7a004e6c0cb8e665ebd606f934d3932a2fe0",
+      "adaptations": []
+    },
+    {
+      "source": "Sources/Typecase/ReadingPassage.swift",
+      "sha256": "fbf03c35392f9fade7b4c4b25b7713571ceceeeef10a9c6f17cd21272f7a0eac",
+      "adaptations": [
+        "Included only ReadingFace and ReadingTypeface, required by Theme."
+      ]
+    }
+  ]
+}

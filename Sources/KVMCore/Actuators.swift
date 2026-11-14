@@ -40,9 +40,14 @@ enum ActuatorError: Error, CustomStringConvertible {
 struct DisplaySelector {
     let vendor: UInt32?
     let model: UInt32?
+    let serial: UInt32?
+
+    init(vendor: UInt32?, model: UInt32?, serial: UInt32? = nil) {
+        self.vendor = vendor; self.model = model; self.serial = serial
+    }
 
     func external() throws -> DisplayInfo {
-        guard let d = Displays.external(vendor: vendor, model: model) else {
+        guard let d = Displays.external(vendor: vendor, model: model, serial: serial) else {
             throw ActuatorError.externalDisplayNotFound
         }
         return d
@@ -71,7 +76,7 @@ final class DisableActuator: Actuator {
     }
 
     func disconnect() throws {
-        guard let ext = Displays.external(vendor: selector.vendor, model: selector.model) else {
+        guard let ext = Displays.external(vendor: selector.vendor, model: selector.model, serial: selector.serial) else {
             if State.disabled != nil {
                 Log.info("display not in online list and a disabled record exists; treating as already disabled")
                 return
@@ -102,14 +107,14 @@ final class DisableActuator: Actuator {
     }
 
     func connect() throws {
-        if let ext = Displays.external(vendor: selector.vendor, model: selector.model), ext.isActive {
+        if let ext = Displays.external(vendor: selector.vendor, model: selector.model, serial: selector.serial), ext.isActive {
             Log.info("display \(ext.id) already active; nothing to do")
             State.disabled = nil
             return
         }
         let record = State.disabled
         let id: CGDirectDisplayID
-        if let ext = Displays.external(vendor: selector.vendor, model: selector.model) {
+        if let ext = Displays.external(vendor: selector.vendor, model: selector.model, serial: selector.serial) {
             id = ext.id
         } else if let record {
             id = record.id
@@ -123,7 +128,7 @@ final class DisableActuator: Actuator {
         }
         // Verify it actually came back; the private call can report success without effect.
         Thread.sleep(forTimeInterval: 0.5)
-        guard let ext = Displays.external(vendor: selector.vendor, model: selector.model), ext.isActive else {
+        guard let ext = Displays.external(vendor: selector.vendor, model: selector.model, serial: selector.serial), ext.isActive else {
             throw ActuatorError.cg("display \(id) still not active after enable", .failure)
         }
         if let record {
@@ -133,7 +138,7 @@ final class DisableActuator: Actuator {
     }
 
     func isConnected() -> Bool? {
-        guard let ext = Displays.external(vendor: selector.vendor, model: selector.model) else { return false }
+        guard let ext = Displays.external(vendor: selector.vendor, model: selector.model, serial: selector.serial) else { return false }
         return ext.isActive
     }
 }
@@ -151,7 +156,7 @@ final class MirrorActuator: Actuator {
     }
 
     func disconnect() throws {
-        guard let ext = Displays.external(vendor: selector.vendor, model: selector.model) else {
+        guard let ext = Displays.external(vendor: selector.vendor, model: selector.model, serial: selector.serial) else {
             // Monitors that drop the DP link on switch are removed by macOS itself; nothing left to do.
             Log.info("external display not online; already disconnected")
             return
@@ -182,14 +187,14 @@ final class MirrorActuator: Actuator {
             CGConfigureDisplayMirrorOfDisplay(config, ext.id, kCGNullDirectDisplay)
         }
         Thread.sleep(forTimeInterval: 0.5)
-        if let record = State.disabled, let fresh = Displays.external(vendor: selector.vendor, model: selector.model) {
+        if let record = State.disabled, let fresh = Displays.external(vendor: selector.vendor, model: selector.model, serial: selector.serial) {
             restoreArrangement(ext: fresh, record: record)
         }
         State.disabled = nil
     }
 
     func isConnected() -> Bool? {
-        guard let ext = Displays.external(vendor: selector.vendor, model: selector.model) else { return false }
+        guard let ext = Displays.external(vendor: selector.vendor, model: selector.model, serial: selector.serial) else { return false }
         return ext.mirrorOf == kCGNullDirectDisplay
     }
 
@@ -257,8 +262,7 @@ final class BetterDisplayActuator: Actuator {
 /// Best effort: a failure here leaves the display usable, just arranged by macOS's defaults.
 func restoreArrangement(ext: DisplayInfo, record: DisabledDisplay) {
     guard let builtin = Displays.builtin() else { return }
-    let alreadyRight = ext.isMain == record.wasMain
-        && Int32(ext.bounds.origin.x) == record.originX && Int32(ext.bounds.origin.y) == record.originY
+    let alreadyRight = record.matches(external: ext, builtin: builtin)
     if alreadyRight { return }
     do {
         try displayTransaction("restore arrangement (external main=\(record.wasMain))") { config in
@@ -298,37 +302,6 @@ enum Shell {
     }
 
     static func capture(_ command: String, timeout: TimeInterval) throws -> String {
-        let proc = Process()
-        proc.executableURL = URL(fileURLWithPath: "/bin/sh")
-        proc.arguments = ["-c", command]
-        let pipe = Pipe()
-        proc.standardOutput = pipe
-        proc.standardError = pipe
-        try proc.run()
-
-        // Drain the pipe off-thread so a chatty command can't fill the buffer and stall.
-        var data = Data()
-        let group = DispatchGroup()
-        group.enter()
-        DispatchQueue.global().async {
-            data = pipe.fileHandleForReading.readDataToEndOfFile()
-            group.leave()
-        }
-
-        let deadline = Date().addingTimeInterval(timeout)
-        while proc.isRunning && Date() < deadline {
-            Thread.sleep(forTimeInterval: 0.05)
-        }
-        if proc.isRunning {
-            proc.terminate()
-            _ = group.wait(timeout: .now() + 1)
-            throw ActuatorError.commandFailed(command, -1, "timed out after \(Int(timeout))s")
-        }
-        group.wait()
-        let out = String(data: data, encoding: .utf8) ?? ""
-        guard proc.terminationStatus == 0 else {
-            throw ActuatorError.commandFailed(command, proc.terminationStatus, out)
-        }
-        return out
+        try ProcessOutput.capture("/bin/sh", ["-c", command], timeout: timeout)
     }
 }

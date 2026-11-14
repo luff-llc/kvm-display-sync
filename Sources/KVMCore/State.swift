@@ -11,6 +11,14 @@ struct DisabledDisplay: Codable {
     /// Where the built-in display sat relative to the external one, so the arrangement survives.
     var builtinOriginX: Int32
     var builtinOriginY: Int32
+
+    func matches(external: DisplayInfo, builtin: DisplayInfo) -> Bool {
+        external.isMain == wasMain
+            && Int32(external.bounds.origin.x) == originX
+            && Int32(external.bounds.origin.y) == originY
+            && Int32(builtin.bounds.origin.x) == builtinOriginX
+            && Int32(builtin.bounds.origin.y) == builtinOriginY
+    }
 }
 
 enum State {

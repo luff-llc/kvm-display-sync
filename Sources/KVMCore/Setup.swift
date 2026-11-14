@@ -33,6 +33,7 @@ enum Setup {
         }
         opts.displayVendor = display.vendor
         opts.displayModel = display.model
+        opts.displaySerial = display.serial
         opts.displayName = Displays.name(for: display.id) ?? opts.displayName
         print()
 

@@ -28,11 +28,19 @@ enum LaunchAgent {
                                withIntermediateDirectories: true)
         try fm.createDirectory(atPath: (plistPath as NSString).deletingLastPathComponent,
                                withIntermediateDirectories: true)
+        try fm.createDirectory(atPath: (logPath as NSString).deletingLastPathComponent,
+                               withIntermediateDirectories: true)
 
-        if fm.fileExists(atPath: installedBinaryPath) {
-            try fm.removeItem(atPath: installedBinaryPath)
+        try unload()
+        // Re-running install from the installed helper must not delete its own source.
+        if sourceResolved != installedBinaryPath {
+            let staging = installedBinaryPath + "." + UUID().uuidString
+            defer { try? fm.removeItem(atPath: staging) }
+            try fm.copyItem(atPath: sourceResolved, toPath: staging)
+            guard rename(staging, installedBinaryPath) == 0 else {
+                throw NSError(domain: NSPOSIXErrorDomain, code: Int(errno))
+            }
         }
-        try fm.copyItem(atPath: sourceResolved, toPath: installedBinaryPath)
         Log.info("installed binary to \(installedBinaryPath)")
 
         let plist: [String: Any] = [
@@ -45,16 +53,14 @@ enum LaunchAgent {
             "StandardErrorPath": logPath,
         ]
         let data = try PropertyListSerialization.data(fromPropertyList: plist, format: .xml, options: 0)
-        try data.write(to: URL(fileURLWithPath: plistPath))
+        try data.write(to: URL(fileURLWithPath: plistPath), options: .atomic)
         Log.info("wrote \(plistPath)")
 
-        try unload()
-        // bootout returns before the old process has finished its shutdown (it restores the
-        // display first). Bootstrapping too early fails, so retry briefly.
+        // Retry briefly while launchd finishes deregistering the old job.
         var lastError: Error?
         for attempt in 1...5 {
             do {
-                try Shell.run("launchctl bootstrap gui/\(getuid()) \"\(plistPath)\"")
+                _ = try ProcessOutput.capture("/bin/launchctl", ["bootstrap", "gui/\(getuid())", plistPath], timeout: 10)
                 lastError = nil
                 break
             } catch {
@@ -69,11 +75,19 @@ enum LaunchAgent {
 
     /// Unloads the agent if present and waits for its process to go away.
     private static func unload() throws {
-        _ = try? Shell.capture("launchctl bootout gui/\(getuid())/\(label)", timeout: 10)
-        for _ in 0..<50 {
-            let out = (try? Shell.capture("launchctl print gui/\(getuid())/\(label) 2>/dev/null | grep -c 'state = running' || true", timeout: 5)) ?? "0"
-            if out.trimmingCharacters(in: .whitespacesAndNewlines) == "0" { return }
-            Thread.sleep(forTimeInterval: 0.1)
+        let service = "gui/\(getuid())/\(label)"
+        let snapshot = try? ProcessOutput.capture("/bin/launchctl", ["print", service], timeout: 5)
+        let pid = snapshot?.split(separator: "\n").compactMap { line -> Int32? in
+            let fields = line.split(whereSeparator: { $0.isWhitespace })
+            return fields.count == 3 && fields[0] == "pid" && fields[1] == "=" ? Int32(fields[2]) : nil
+        }.first
+        _ = try? ProcessOutput.capture("/bin/launchctl", ["bootout", service], timeout: 10)
+        guard let pid else { return }
+        // bootout can return before the daemon has finished restoring the layout.
+        let deadline = Date().addingTimeInterval(10)
+        while kill(pid, 0) == 0 && Date() < deadline { Thread.sleep(forTimeInterval: 0.1) }
+        guard kill(pid, 0) != 0 else {
+            throw UsageError.message("The previous service is still restoring the display. Try again in a moment.")
         }
     }
 
@@ -89,5 +103,19 @@ enum LaunchAgent {
             Log.info("removed \(installedBinaryPath)")
         }
         Log.info("unloaded launch agent \(label)")
+    }
+
+    static func pause() throws { try unload() }
+
+    static func resume() throws {
+        guard FileManager.default.fileExists(atPath: plistPath) else {
+            throw UsageError.message("No service configuration exists. Run setup first.")
+        }
+        let service = "gui/\(getuid())/\(label)"
+        if (try? ProcessOutput.capture("/bin/launchctl", ["print", service], timeout: 5)) != nil {
+            _ = try ProcessOutput.capture("/bin/launchctl", ["kickstart", service], timeout: 10)
+        } else {
+            _ = try ProcessOutput.capture("/bin/launchctl", ["bootstrap", "gui/\(getuid())", plistPath], timeout: 10)
+        }
     }
 }

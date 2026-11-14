@@ -1,4 +1,6 @@
 .build/
-*.xcodeproj
 .swiftpm/
 .DS_Store
+*.app/
+*.zip
+*.dSYM/
