@@ -1,6 +1,7 @@
-# v0.1.1 — Typecase interface
+# v0.1.1 — Typecase interface and Anchor icon
 
 - LUFF Typecase styling with a content-seeded backdrop, serif monitor identity, and floating glass controls.
+- New Anchor liquid-glass app icon in warm taupe and pearl.
 - Independent settings to hide the menu-bar and Dock icons; reopening the app brings its window back even when both are hidden.
 - A self-contained, pinned Typecase source snapshot with provenance and a macOS 14 backdrop fallback.
 - Original engine history and MIT attribution retained.

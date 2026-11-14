@@ -1,5 +1,7 @@
 # KVM Display Sync by LUFF
 
+<img src="Assets/Anchor.png" width="128" alt="Anchor app icon">
+
 An independently maintained native macOS app by LUFF, based on [AtakanMavzer/kvm-display-sync](https://github.com/AtakanMavzer/kvm-display-sync). The original project provides the USB detection and display recovery engine. This companion adds a SwiftUI setup wizard, menu-bar access, service status, pause/resume, logs, and uninstall.
 
 ## Requirements
@@ -108,3 +110,5 @@ Original engine: AtakanMavzer/kvm-display-sync commit `ea8f58053d937415cb8e761b5
 The original command-line documentation is preserved in `docs/CLI.md`. Public distribution is maintained independently by LUFF; it is not endorsed by the original author.
 
 The LUFF companion app is MIT licensed; see `LICENSE`. Selected LUFF Typecase components are vendored at revision `36ef6a1b198331e77e6308d117aef4b2778b5d87`, with source paths, hashes, and adaptations recorded in `Vendor/Typecase/UPSTREAM.json`. This owner-approved source snapshot is distributed under this project’s MIT license. Typecase remains a separate private project; no private dependency or symlink is required to build this app.
+
+The Anchor app icon was generated with OpenAI’s image-generation tool and selected by LUFF. Its source master and production notes are in `Assets/`.

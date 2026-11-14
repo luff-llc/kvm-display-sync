@@ -12,6 +12,7 @@ swift make-icon.swift "$BUILD_ROOT/AppIcon.iconset"
 iconutil -c icns "$BUILD_ROOT/AppIcon.iconset" -o "$APP_PATH/Contents/Resources/AppIcon.icns"
 cp Licenses/AtakanMavzer-MIT.txt "$APP_PATH/Contents/Resources/UPSTREAM-LICENSE.txt"
 cp LICENSE "$APP_PATH/Contents/Resources/LUFF-LICENSE.txt"
+cp Vendor/Typecase/LICENSE "$APP_PATH/Contents/Resources/TYPECASE-LICENSE.txt"
 xattr -cr "$APP_PATH"
 if [[ -n "${KVM_SIGN_IDENTITY:-}" ]]; then
     codesign --force --options runtime --timestamp --sign "$KVM_SIGN_IDENTITY" "$APP_PATH/Contents/Helpers/kvm-display-sync"
