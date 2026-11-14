@@ -6,7 +6,10 @@ KVM Display Sync by LUFF adds a native macOS interface to AtakanMavzer's open-so
 
 - Guided monitor and USB-hub detection by switching the KVM away and back.
 - Automatic display recovery with a service that starts at login.
-- Menu-bar access, status details, pause/resume, logs, and service uninstall.
+- Optional menu-bar and Dock icons, status details, pause/resume, logs, and service uninstall.
+- Native LUFF styling with shared blue palette, serif heading, and adaptive dark mode.
+- Separate CLI-only signed and notarized download; no app interface required.
+- A Homebrew cask for the app and source formula for the CLI in LUFF’s shared tap.
 - Shared Swift core for the app and CLI; typed hardware discovery.
 - EDID serial targeting and ambiguity checks for matching monitor models.
 - Recovery of the built-in screen's position as well as the external screen.
@@ -21,7 +24,7 @@ The built-in display must be available. The monitor's USB hub must follow the KV
 
 The app and helper are Developer ID signed. Apple notarization was accepted and the ticket stapled. The final ZIP was extracted and passed code-signature, stapled-ticket, and Gatekeeper verification. The KVM switch away and return were observed on the test Mac: the hub disappeared and returned, mirror mode was applied, and the original main display and built-in-screen position were restored. Pause and resume were also exercised. The refactored engine passed all 11 regression tests; its updated service was installed and confirmed in sync. The final native app interface was visually checked after unlocking the test Mac and showed the restored display and running service.
 
-Release publisher: `Developer ID Application: LUFF LLC (J53CA7SFMK)`. The app and helper use the company's Developer ID certificate, separate from its Mac App Store/TestFlight distribution certificate. Apple accepted this publisher-corrected build under submission `8fac4792-8112-4721-88e1-6ebbf0a0431b` on November 13, 2026.
+Release publisher: `Developer ID Application: LUFF LLC (J53CA7SFMK)`. The app and helper use the company's Developer ID certificate, separate from its Mac App Store/TestFlight distribution certificate. The public app and standalone CLI are submitted separately for Apple notarization. The native app carries a stapled ticket; the raw CLI binary relies on Apple’s online ticket lookup. Neither download requires Gatekeeper to be disabled.
 
 ## Attribution
 

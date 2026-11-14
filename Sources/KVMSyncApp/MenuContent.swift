@@ -11,6 +11,7 @@ struct MenuContent: View {
             Button("Open Log", action: model.logs)
         }
         Divider()
+        SettingsLink { Text("Settings…") }
         Button("Quit App") { NSApplication.shared.terminate(nil) }
     }
     private func showApp() { openWindow(id: "main"); NSApplication.shared.activate(ignoringOtherApps: true) }

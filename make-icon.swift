@@ -14,8 +14,8 @@ for size in [16, 32, 128, 256, 512] {
         let factor = CGFloat(pixels) / 1024
         NSAffineTransform().apply { transform in transform.scale(by: factor); transform.concat() }
         let tile = NSBezierPath(roundedRect: NSRect(x: 100, y: 100, width: 824, height: 824), xRadius: 180, yRadius: 180)
-        NSGradient(starting: NSColor(red: 0.35, green: 0.36, blue: 0.85, alpha: 1),
-                   ending: NSColor(red: 0.20, green: 0.20, blue: 0.59, alpha: 1))!.draw(in: tile, angle: -90)
+        NSGradient(starting: NSColor(red: 36/255, green: 85/255, blue: 213/255, alpha: 1),
+                   ending: NSColor(red: 36/255, green: 85/255, blue: 213/255, alpha: 1))!.draw(in: tile, angle: -90)
         let symbol = NSImage(systemSymbolName: "display.2", accessibilityDescription: nil)!
             .withSymbolConfiguration(.init(paletteColors: [.white]))!
         let ratio = symbol.size.width / symbol.size.height

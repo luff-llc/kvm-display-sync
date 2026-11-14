@@ -8,26 +8,29 @@ struct Dashboard: View {
             VStack(alignment: .leading, spacing: 24) {
                 HStack(spacing: 18) {
                     Image(systemName: "display.2")
-                        .font(.system(size: 34, weight: .medium)).foregroundStyle(.white).accessibilityHidden(true)
+                        .font(.system(size: 34, weight: .medium)).foregroundStyle(LUFFTheme.accent).accessibilityHidden(true)
                         .frame(width: 76, height: 76)
-                        .background(.indigo.gradient, in: .rect(cornerRadius: 19))
+                        .background(LUFFTheme.stage, in: .rect(cornerRadius: 14))
+                        .overlay { RoundedRectangle(cornerRadius: 14).stroke(LUFFTheme.line) }
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("Keep your desktop in place.").font(.title2.bold())
-                        Text("Automatic display recovery for your KVM.").foregroundStyle(.secondary)
+                        Text("LUFF / UTILITIES").font(.caption.weight(.semibold)).tracking(2).foregroundStyle(LUFFTheme.accent)
+                        Text("KVM Display Sync").font(.custom("Georgia", size: 30, relativeTo: .title))
+                        Text("Keep your desktop in place.").foregroundStyle(LUFFTheme.muted)
                     }
                     Spacer()
                 }
                 HStack {
                     Label(model.running ? "Sync is running" : model.installed ? "Sync is paused" : "Ready to set up",
                           systemImage: model.running ? "checkmark.circle.fill" : "circle.dashed")
-                        .foregroundStyle(model.running ? .green : .secondary).font(.headline)
+                        .foregroundStyle(model.running ? LUFFTheme.accent : LUFFTheme.muted).font(.headline)
                     Spacer()
                     if model.busy { ProgressView().controlSize(.small) }
                     if model.installed {
                         Button(model.running ? "Pause" : "Resume", action: model.toggle).disabled(model.busy)
                     }
                 }
-                .padding(16).background(.quaternary.opacity(0.4), in: .rect(cornerRadius: 12))
+                .padding(16).background(LUFFTheme.surface, in: .rect(cornerRadius: 10))
+                .overlay { RoundedRectangle(cornerRadius: 10).stroke(LUFFTheme.line) }
                 if !model.installed || (0...2).contains(model.stage) {
                     SetupView(model: model)
                 } else {
@@ -60,11 +63,18 @@ struct Dashboard: View {
                 HStack {
                     Text("KVM Display Sync · By LUFF").font(.caption).foregroundStyle(.secondary)
                     Spacer()
-                    Link("Open-source project", destination: URL(string: "https://github.com/AtakanMavzer/kvm-display-sync")!).font(.caption)
+                    Link("Source", destination: URL(string: "https://github.com/luff-llc/kvm-display-sync")!).font(.caption)
+                    Link("Original by AtakanMavzer", destination: URL(string: "https://github.com/AtakanMavzer/kvm-display-sync")!).font(.caption)
                 }
             }.padding(30)
         }
         .frame(width: 680).frame(minHeight: 560, maxHeight: 820)
+        .foregroundStyle(LUFFTheme.ink)
+        .background(LUFFTheme.paper)
+        .tint(LUFFTheme.accent)
+        .toolbar {
+            SettingsLink { Label("Settings", systemImage: "gearshape") }
+        }
         .alert("Uninstall the background service?", isPresented: $confirmRemoval) {
             Button("Uninstall", role: .destructive, action: model.remove)
             Button("Cancel", role: .cancel) { }

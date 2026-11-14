@@ -10,6 +10,28 @@ An independently maintained native macOS app by LUFF, based on [AtakanMavzer/kvm
 
 ## Install and set up
 
+### Homebrew
+
+Install from LUFF’s shared Homebrew tap:
+
+```sh
+brew install --cask luff-llc/tap/luff-kvm-display-sync
+```
+
+CLI only (builds from source; requires Xcode 26 or later):
+
+```sh
+brew install luff-llc/tap/kvm-display-sync
+kvm-display-sync setup
+```
+
+You do not need both packages: they share one background service. Before removing either package, uninstall the service from the app or run `kvm-display-sync uninstall`. The packages are maintained in [luff-llc/homebrew-tap](https://github.com/luff-llc/homebrew-tap), separate from Homebrew’s main repositories.
+
+### Direct download
+
+Get the notarized [Mac app or signed CLI archive from Releases](https://github.com/luff-llc/kvm-display-sync/releases/latest). Apple Silicon binaries are provided; no Intel binary has been validated or published.
+
+
 1. Copy `KVM Display Sync.app` to Applications and open it.
 2. With the KVM showing the Mac, choose the monitor and capture the USB devices.
 3. Switch to the other computer and compare USB devices using the Mac's built-in keyboard and screen.
@@ -18,6 +40,27 @@ An independently maintained native macOS app by LUFF, based on [AtakanMavzer/kvm
 The service starts at login. The app itself does not need to stay open. macOS may display a background-item notice; leave the service enabled under System Settings > General > Login Items & Extensions.
 
 Pause unloads the service and restores the display. Resume starts it again. Pause lasts until resume or the next login. Uninstall Service stops automatic sync and removes its login agent and copied helper; the app remains available for setup again.
+
+## Appearance
+
+Settings has independent **Show menu bar icon** and **Show Dock icon** switches. You can turn both off. Open KVM Display Sync from Applications to bring its window back. Automatic sync continues independently of the interface.
+
+The native interface uses LUFF's blue palette from `luff.works/app/blue-brand.css`, its Georgia serif fallback for the heading, and native macOS controls. It adapts to light and dark appearances.
+
+## CLI without the app
+
+Extract the CLI ZIP and run `bin/kvm-display-sync setup` once from the Mac's built-in screen. No app window, Dock icon, or menu-bar item is required. The wizard installs the service at login.
+
+```sh
+kvm-display-sync help
+kvm-display-sync displays
+kvm-display-sync usb
+kvm-display-sync pause
+kvm-display-sync resume
+kvm-display-sync uninstall
+```
+
+`status` accepts the hardware selectors used during installation; its defaults describe the original author's ASUS monitor. Setup saves your selected IDs in the LaunchAgent. This CLI needs a logged-in macOS desktop session with WindowServer access; it is not a server daemon. The standalone binary is Developer ID signed and notarized. Bare executables cannot carry a stapled ticket, so initial Gatekeeper verification may need internet access.
 
 ## How it works
 
